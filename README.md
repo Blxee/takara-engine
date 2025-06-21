@@ -1,0 +1,3 @@
+# Takara Engine
+
+Is a tak board game engine and cli game build in rust
