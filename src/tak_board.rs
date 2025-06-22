@@ -1,24 +1,31 @@
-use std::fmt::{self};
+use std::{
+    collections::HashMap,
+    fmt::{self},
+};
 
-// enum TakBoardConfig {
-//     Two = 2,
-//     Three = 3,
-//     Four = 4,
-//     Five = 5,
-//     Six = 6,
-//     Seven = 7,
-//     Eight = 8,
-// }
+enum TakBoardSize {
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+}
 
-pub struct TakBoard<const N: usize = 5> {
-    grid: [[Cell<N>; N]; N],
+struct TakBoardConfig {
+    board_size: u32,
+    normal_stones: u32,
+    capstones: u32,
+}
+
+pub struct TakBoard {
+    grid: HashMap<(i32, i32), Cell>,
     players: [TakPlayer; 2],
     turn: StoneColor,
 }
 
-#[derive(Clone, Copy)]
-struct Cell<const N: usize = 5> {
-    stack: [Option<Stone>; N],
+struct Cell {
+    stack: Vec<Stone>,
 }
 
 #[derive(Clone, Copy)]
@@ -46,10 +53,10 @@ struct TakPlayer {
     capstones_available: u32,
 }
 
-impl<const N: usize> TakBoard<N> {
-    pub const fn new() -> Self {
+impl TakBoard {
+    pub fn new() -> Self {
         Self {
-            grid: [[Cell::new(); N]; N],
+            grid: HashMap::new(),
             players: [TakPlayer::new(), TakPlayer::new()],
             turn: StoneColor::White,
         }
@@ -74,36 +81,34 @@ impl fmt::Display for TakBoard {
 
         writeln!(f, "      a     b     c     d     e")?;
         writeln!(f, "   +-----+-----+-----+-----+-----+")?;
-        for (i, row) in self.grid.iter().enumerate() {
-            write!(f, " {} |", i + 1)?;
-            for cell in row {
+        for row in 0..5 {
+            write!(f, " {} |", row + 1)?;
+            for col in 0..5 {
+                let cell = self.grid.get(&(row, col)).unwrap();
                 write!(f, "{cell}|")?;
             }
-            writeln!(f, " {}\n   +-----+-----+-----+-----+-----+", i + 1)?;
+            writeln!(f, " {}\n   +-----+-----+-----+-----+-----+", row + 1)?;
         }
         write!(f, "      a     b     c     d     e")
     }
 }
 
-impl<const N: usize> Cell<N> {
-    const fn new() -> Self {
-        Self { stack: [None; N] }
+impl Cell {
+    fn new() -> Self {
+        Self { stack: Vec::new() }
     }
 }
 
 impl fmt::Display for Cell {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut repr = String::with_capacity(self.stack.len());
-        // for each layer in the cell stack
-        for layer in self.stack.iter() {
-            // append the repr of each piece and fill the rest with space
-            repr.push_str(
-                layer
-                    .as_ref()
-                    .map_or(" ".to_string(), |piece| piece.to_string())
-                    .as_str(),
-            );
+        // for each stone in the cell stack
+        for stone in self.stack.iter() {
+            // append the repr of each piece
+            repr.push_str(&stone.to_string());
         }
+
+        // TODO: the stack will distort the shape of the board!!
 
         write!(f, "{repr}")
     }
