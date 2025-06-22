@@ -84,8 +84,11 @@ impl fmt::Display for TakBoard {
         for row in 0..5 {
             write!(f, " {} |", row + 1)?;
             for col in 0..5 {
-                let cell = self.grid.get(&(row, col)).unwrap();
-                write!(f, "{cell}|")?;
+                let cell_repr = self
+                    .grid
+                    .get(&(row, col))
+                    .map_or(" ".repeat(5), |cell| cell.to_string());
+                write!(f, "{cell_repr}|")?;
             }
             writeln!(f, " {}\n   +-----+-----+-----+-----+-----+", row + 1)?;
         }
