@@ -1,14 +1,17 @@
 fn main() {
     println!("Hello, world!");
+    let board = tak_board::TakBoard::new();
+    println!("{board}");
 }
 
 mod tak_board {
-    use std::fmt::{self};
+    use std::{array, fmt::{self}};
 
-    struct TakBoard<const N: usize = 5> {
+    pub struct TakBoard<const N: usize = 5> {
         grid: [[Cell<N>; N]; N],
     }
 
+    #[derive(Clone, Copy)]
     struct Cell<const N: usize = 5> {
         stack: [Option<Piece>; N],
     }
@@ -33,11 +36,8 @@ mod tak_board {
     }
 
     impl TakBoard {
-        const fn new() -> Self {
-            let mut grid = [const {
-                [const { Cell::new() }; 5];
-                5
-            }];
+        pub const fn new() -> Self {
+            let mut grid = [[Cell::new(); 5]; 5];
             Self { grid }
         }
     }
@@ -58,7 +58,16 @@ mod tak_board {
             //   +-----+-----+-----+-----+-----+
             //      a     b     c     d     e
 
-            write!(f, "")
+            writeln!(f, "      a     b     c     d     e")?;
+            writeln!(f, "   +-----+-----+-----+-----+-----+")?;
+            for (i, row) in self.grid.iter().enumerate() {
+                write!(f, " {} |", i + 1)?;
+                for cell in row {
+                    write!(f, "{cell}|")?;
+                }
+                writeln!(f, "\n   +-----+-----+-----+-----+-----+")?;
+            }
+            write!(f, "      a     b     c     d     e")
         }
     }
 
