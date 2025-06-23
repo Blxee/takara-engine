@@ -1,8 +1,10 @@
 [package]
 name = "takara-engine"
+description = "Takara is a blazingly fast Tak engine and a cli game"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-clap = "4.5.40"
+clap = { version = "4.5.40", features = ['derive'] }
 crossterm = "0.29.0"
+rand = "0.9.1"
