@@ -36,7 +36,4 @@ Is a Tak board game engine and CLI game build in rust
   - specify which stone type to put (either flat, standing or capstone)
   - provide which direction to break the stack towards
 
-
-### The input is a string containing:
-  - The cell position which contains the row letter and column number (ex: a2, 4b..)
-the order of the row and column does not matter.
+**Current format**: `<row><col>[amount]<direction(t,d,l,r)>`
