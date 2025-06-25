@@ -3,10 +3,9 @@ use crate::types::*;
 
 pub fn start_game() {
     let mut board = tak_board::TakBoard::new(tak_board::BoardSize::Size5x5);
-    let p = Position::new(3, 4);
-    board.put_stone((2, 3), tak_board::StoneType::CapStone);
-    board.put_stone((1, 3), tak_board::StoneType::FlatStone);
-    board.put_stone((1, 2), tak_board::StoneType::StandingStone);
+    board.put_stone(Position::new(2, 3), tak_board::StoneType::CapStone);
+    board.put_stone(Position::new(1, 3), tak_board::StoneType::FlatStone);
+    board.put_stone(Position::new(1, 2), tak_board::StoneType::StandingStone);
     println!("{board}");
     // TODO: implement the game loop
 }

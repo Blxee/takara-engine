@@ -1,9 +1,10 @@
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+/// Position of a cell in the tak board
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
-    row: i32,
-    col: i32,
+    pub row: i32,
+    pub col: i32,
 }
 
 impl Position {
@@ -43,7 +44,14 @@ impl AddAssign for Position {
 
 impl SubAssign for Position {
     fn sub_assign(&mut self, rhs: Self) {
-        self.row += rhs.row;
-        self.col += rhs.col;
+        self.row -= rhs.row;
+        self.col -= rhs.col;
     }
+}
+
+#[derive(Clone, Copy)]
+pub enum StoneType {
+    FlatStone,
+    StandingStone,
+    CapStone,
 }

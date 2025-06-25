@@ -4,6 +4,7 @@ use std::{
     collections::HashMap,
     fmt::{self},
 };
+use StoneType::*;
 
 pub enum BoardSize {
     Size3x3,
@@ -38,14 +39,6 @@ enum StoneColor {
     Black = 1,
 }
 use StoneColor::*;
-
-#[derive(Clone, Copy)]
-pub enum StoneType {
-    FlatStone,
-    StandingStone,
-    CapStone,
-}
-use StoneType::*;
 
 struct TakPlayer {
     color: StoneColor,
@@ -147,6 +140,8 @@ impl TakBoard {
         Ok(())
     }
 
+    // TODO: split apart and refactor this amalgamation of a function
+
     /// Moves an amount of stones from the top of the stack towards a direction
     ///
     /// # Arguments:
@@ -160,38 +155,89 @@ impl TakBoard {
     pub fn move_stack(
         &mut self,
         position: Position,
-        carry_amount: usize,
+        carry_amount: Option<usize>,
         direction: Direction,
-        stacks: Vec<u32>,
+        stacks: Option<Vec<usize>>,
     ) -> Result<(), &'static str> {
+        // WARN: standing stones should not be moved
+        // set default carry amount to 1 if not provided
+        let carry_amount = carry_amount.unwrap_or(1);
+        // set default stacks to 1 stone to be put for each cell passed
+        let stacks = vec![1].repeat(self.size as usize);
+        // get the stack at cell position
         let original_stack = &mut self
             .grid
             .get_mut(&position)
             .ok_or("position is out of board bounds")?
             .stack;
+        // if user is trying to carry more than available, return err
         if carry_amount > original_stack.len() {
             return Err("cannot carry more than the original stack length");
         }
-        let stack_to_move: Vec<_> = original_stack
+        // take the carry amount of stones from the cell
+        let mut stack_to_move: Vec<_> = original_stack
             .splice(
                 (original_stack.len() - carry_amount)..original_stack.len(),
                 [],
             )
             .collect();
+        // convert the direction to vector format
         let step = match direction {
             Left => Position::new(0, -1),
             Right => Position::new(0, 1),
             Up => Position::new(-1, 0),
             Down => Position::new(1, 0),
         };
+        // move the stack towards direction while puting stones at each cell passed
+        // according to stacks argument
         let mut current_position = position + step;
         for i in stacks {
-            let cell = self.grid.get_mut(&current_position);
-            // TODOT: fill the cells until the end or the stack runs out
+            // if this cell is the furthest we can reach
+            // (if we are at the border or the next head of stack is not passable)
+            let cell_near_border = self.is_position_at_borders(current_position);
+            let current_stack_head = self.get_head_of_stack(current_position).stone_type;
+            let next_stack_head = self.get_head_of_stack(current_position + step).stone_type;
+            if match (cell_near_border, current_stack_head, next_stack_head) {
+                (true, _, _) => true,
+                (false, FlatStone, CapStone | StandingStone) => true,
+                // TODO: this needs another arm for when a capstone flattens a wall
+                _ => false,
+            } {
+                // empty the whole stack here
+                let cell = self.grid.get_mut(&current_position).unwrap();
+                cell.stack.append(&mut stack_to_move);
+            }
+            // empty part of the stack here then continue
+            let cell = self.grid.get_mut(&current_position).unwrap();
+            cell.stack
+                .append(&mut stack_to_move.splice(0..i, []).collect());
+            if stack_to_move.is_empty() {
+                break;
+            }
             current_position += step;
         }
         Ok(())
     }
+
+    /// Determines whether a position is at the edge of the board
+    fn is_position_at_borders(&self, pos: Position) -> bool {
+        pos.row == 0
+            || pos.col == 0
+            || pos.row == (self.size - 1) as i32
+            || pos.col == (self.size - 1) as i32
+    }
+
+    fn get_head_of_stack(&self, pos: Position) -> &Stone {
+        // BUG: these unwraps could cause panic
+        self.grid.get(&pos).unwrap().stack.last().unwrap()
+    }
+
+    // fn is position_out_of_bounds(&self, pos: Position) -> bool {
+    //     pos.row < 0
+    //         || pos.col < 0
+    //         || pos.row >= self.size as i32
+    //         || pos.col >= self.size as i32
+    // }
 }
 
 impl fmt::Display for TakBoard {
@@ -217,7 +263,7 @@ impl fmt::Display for TakBoard {
             for col in 0..5 {
                 let cell_repr = self
                     .grid
-                    .get(&(row, col))
+                    .get(&Position::new(row, col))
                     .map_or(" ".repeat(5), |cell| cell.to_string());
                 write!(f, "{cell_repr}|")?;
             }
@@ -243,7 +289,7 @@ impl fmt::Display for Cell {
         }
         repr.push_str(&" ".repeat(5 - self.stack.len()));
 
-        // TODO: the stack will distort the shape of the board!!
+        // WARN: the stack will distort the shape of the board!!
 
         write!(f, "{repr}")
     }
