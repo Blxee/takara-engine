@@ -1,10 +1,11 @@
+use crate::types::*;
+use rand::{rng, seq::IndexedRandom};
 use std::{
     collections::HashMap,
     fmt::{self},
 };
-use rand::{rng, seq::IndexedRandom};
 
-enum TakBoardSize {
+pub enum BoardSize {
     Size3x3,
     Size4x4,
     Size5x5,
@@ -12,11 +13,11 @@ enum TakBoardSize {
     Size7x7,
     Size8x8,
 }
-use TakBoardSize::*;
+use BoardSize::*;
 
 pub struct TakBoard {
-    size: usize,
-    grid: HashMap<(usize, usize), Cell>,
+    size: u32,
+    grid: HashMap<Position, Cell>,
     players: [TakPlayer; 2],
     turn: StoneColor,
 }
@@ -39,7 +40,7 @@ enum StoneColor {
 use StoneColor::*;
 
 #[derive(Clone, Copy)]
-enum StoneType {
+pub enum StoneType {
     FlatStone,
     StandingStone,
     CapStone,
@@ -52,9 +53,17 @@ struct TakPlayer {
     capstones_available: u32,
 }
 
+pub enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}
+use Direction::*;
+
 impl TakBoard {
-    pub fn new(size: TakBoardSize) -> Self {
-        let (size, stones_available, capstones_available) = match size {
+    pub fn new(size: BoardSize) -> Self {
+        let (size, stones_available, capstones_available): (u32, u32, u32) = match size {
             Size3x3 => (3, 10, 0),
             Size4x4 => (4, 15, 0),
             Size5x5 => (5, 20, 1),
@@ -63,10 +72,10 @@ impl TakBoard {
             Size8x8 => (8, 50, 2),
         };
         // Fill the cells of the grid
-        let mut grid = HashMap::with_capacity(size * size);
+        let mut grid = HashMap::with_capacity((size * size) as usize);
         for row in 0..size {
             for col in 0..size {
-                grid.insert((row, col), Cell::new());
+                grid.insert(Position::new(row as i32, col as i32), Cell::new());
             }
         }
 
@@ -83,7 +92,7 @@ impl TakBoard {
                     color: Black,
                     stones_available,
                     capstones_available,
-                }
+                },
             ],
             turn: *[White, Black].choose(&mut rng()).unwrap(),
         }
@@ -97,9 +106,9 @@ impl TakBoard {
     }
 
     /// Put a new stone on the board
-    fn put_stone(
+    pub fn put_stone(
         &mut self,
-        position: (usize, usize),
+        position: Position,
         stone_type: StoneType,
     ) -> Result<(), &'static str> {
         let current_player = &mut self.players[self.turn as usize];
@@ -107,12 +116,12 @@ impl TakBoard {
         match stone_type {
             CapStone => {
                 if current_player.capstones_available <= 0 {
-                    return Err("");
+                    return Err("There are no capstones left");
                 }
             }
             FlatStone | StandingStone => {
                 if current_player.stones_available <= 0 {
-                    return Err("");
+                    return Err("There are no normal stones left");
                 }
             }
         }
@@ -122,7 +131,7 @@ impl TakBoard {
             .get_mut(&position)
             .expect("Board was not initialized currectly");
         if !cell.stack.is_empty() {
-            return Err("");
+            return Err("This cell is not empty");
         }
         // Put stone in the cell
         cell.stack.push(Stone {
@@ -135,6 +144,52 @@ impl TakBoard {
             FlatStone | StandingStone => current_player.stones_available -= 1,
         }
         self.swap_turns();
+        Ok(())
+    }
+
+    /// Moves an amount of stones from the top of the stack towards a direction
+    ///
+    /// # Arguments:
+    ///
+    /// * `position` - the cell position of the original stack
+    /// * `carry_amount` - the amount of stones to carry from the top
+    /// (up to max limit of board size) defaults to `1` if ommited
+    /// * `direction` - the direction to break apart the carried towards
+    /// * `stacks` - how many stones to leave at each step, defaults to 1 at each cell then leave
+    /// the rest at the last cell possible
+    pub fn move_stack(
+        &mut self,
+        position: Position,
+        carry_amount: usize,
+        direction: Direction,
+        stacks: Vec<u32>,
+    ) -> Result<(), &'static str> {
+        let original_stack = &mut self
+            .grid
+            .get_mut(&position)
+            .ok_or("position is out of board bounds")?
+            .stack;
+        if carry_amount > original_stack.len() {
+            return Err("cannot carry more than the original stack length");
+        }
+        let stack_to_move: Vec<_> = original_stack
+            .splice(
+                (original_stack.len() - carry_amount)..original_stack.len(),
+                [],
+            )
+            .collect();
+        let step = match direction {
+            Left => Position::new(0, -1),
+            Right => Position::new(0, 1),
+            Up => Position::new(-1, 0),
+            Down => Position::new(1, 0),
+        };
+        let mut current_position = position + step;
+        for i in stacks {
+            let cell = self.grid.get_mut(&current_position);
+            // TODOT: fill the cells until the end or the stack runs out
+            current_position += step;
+        }
         Ok(())
     }
 }
@@ -186,6 +241,7 @@ impl fmt::Display for Cell {
             // append the repr of each piece
             repr.push_str(&stone.to_string());
         }
+        repr.push_str(&" ".repeat(5 - self.stack.len()));
 
         // TODO: the stack will distort the shape of the board!!
 

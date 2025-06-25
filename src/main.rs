@@ -1,3 +1,5 @@
+mod types;
+use types::*;
 mod cli;
 mod tak_board;
 use clap::Parser;

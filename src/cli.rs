@@ -1,7 +1,12 @@
 use crate::tak_board;
+use crate::types::*;
 
 pub fn start_game() {
-    let board = tak_board::TakBoard::new();
+    let mut board = tak_board::TakBoard::new(tak_board::BoardSize::Size5x5);
+    let p = Position::new(3, 4);
+    board.put_stone((2, 3), tak_board::StoneType::CapStone);
+    board.put_stone((1, 3), tak_board::StoneType::FlatStone);
+    board.put_stone((1, 2), tak_board::StoneType::StandingStone);
     println!("{board}");
     // TODO: implement the game loop
 }
@@ -25,12 +30,6 @@ enum TakInput {
     },
 }
 
-/// A cell position in the Tak board
-struct Position {
-    row: usize,
-    col: usize,
-}
-
 enum Direction {
     Up,
     Down,
@@ -43,17 +42,23 @@ impl TakInput {
     ///
     /// The format should be either:
     ///     - `<position><amount><direction>`
-    ///     - `<position><stone_type>`
+    ///     - `<position>[stone_type]`
     ///
     /// where:
     ///     - `position`: should contain a **row** number and a **column** letter (ex: g2, 4d)
     ///     - `amount`: is a positive number > 1
     ///     - `direction`: is one of four letters (u: Up, d: Down, l: Left, r: Right)
     ///     - `stone_type`: is a letter (f: Flat, w: Wall, c: Capstone)
+    ///     defaults to flat stone if omitted
     ///
     /// > Note:
     ///     the input is case **insensitive**, and all white space is ignored
     fn from_str(s: &str) -> Result<Self, &str> {
+        // First extract the position:
+        const VALID_ROWS: &str = "12345678";
+        const VALID_COLS: &str = "abcdefgh";
+        let mut chars = s.chars();
+        chars.find(|c| VALID_ROWS.contains(&c.to_string()));
         Err("hello")
     }
 }
