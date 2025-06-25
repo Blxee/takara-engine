@@ -4,19 +4,19 @@ use std::{
 };
 
 enum TakBoardSize {
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
+    Size3x3,
+    Size4x4,
+    Size5x5,
+    Size6x6,
+    Size7x7,
+    Size8x8,
 }
 
-struct TakBoardConfig {
-    board_size: u32,
-    normal_stones: u32,
-    capstones: u32,
-}
+// struct TakBoardConfig {
+//     board_size: u32,
+//     normal_stones: u32,
+//     capstones: u32,
+// }
 
 pub struct TakBoard {
     grid: HashMap<(i32, i32), Cell>,
@@ -31,7 +31,7 @@ struct Cell {
 #[derive(Clone, Copy)]
 struct Stone {
     color: StoneColor,
-    typ: StoneType,
+    stone_type: StoneType,
 }
 
 #[derive(Clone, Copy)]
@@ -39,6 +39,7 @@ enum StoneColor {
     White = 0,
     Black = 1,
 }
+use StoneColor::*;
 
 #[derive(Clone, Copy)]
 enum StoneType {
@@ -46,10 +47,11 @@ enum StoneType {
     StandingStone,
     CapStone,
 }
+use StoneType::*;
 
 struct TakPlayer {
     color: StoneColor,
-    stones_left: u32,
+    stones_available: u32,
     capstones_available: u32,
 }
 
@@ -60,6 +62,55 @@ impl TakBoard {
             players: [TakPlayer::new(), TakPlayer::new()],
             turn: StoneColor::White,
         }
+    }
+
+    fn swap_turns(&mut self) {
+        self.turn = match self.turn {
+            White => Black,
+            Black => White,
+        };
+    }
+
+    /// Put a new stone on the board
+    fn put_stone(
+        &mut self,
+        position: (i32, i32),
+        stone_type: StoneType,
+    ) -> Result<(), &'static str> {
+        let current_player = &mut self.players[self.turn as usize];
+        // Make sure player has enough of this stone type
+        match stone_type {
+            CapStone => {
+                if current_player.capstones_available <= 0 {
+                    return Err("");
+                }
+            }
+            FlatStone | StandingStone => {
+                if current_player.stones_available <= 0 {
+                    return Err("");
+                }
+            }
+        }
+        // Only put stone if cell is empty
+        let cell = self
+            .grid
+            .get_mut(&position)
+            .expect("Board was not initialized currectly");
+        if !cell.stack.is_empty() {
+            return Err("");
+        }
+        // Put stone in the cell
+        cell.stack.push(Stone {
+            color: self.turn,
+            stone_type,
+        });
+        // Subtract the stone we just put on board
+        match stone_type {
+            CapStone => current_player.capstones_available -= 1,
+            FlatStone | StandingStone => current_player.stones_available -= 1,
+        }
+        self.swap_turns();
+        Ok(())
     }
 }
 
@@ -119,7 +170,7 @@ impl fmt::Display for Cell {
 
 impl fmt::Display for Stone {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.typ {
+        match self.stone_type {
             StoneType::FlatStone => write!(f, "F"),
             StoneType::StandingStone => write!(f, "W"),
             StoneType::CapStone => write!(f, "C"),
@@ -131,7 +182,7 @@ impl TakPlayer {
     const fn new() -> Self {
         Self {
             color: StoneColor::White,
-            stones_left: 22,
+            stones_available: 22,
             capstones_available: 1,
         }
     }
