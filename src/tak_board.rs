@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fmt::{self},
 };
+use rand::{rng, seq::IndexedRandom};
 
 enum TakBoardSize {
     Size3x3,
@@ -11,15 +12,11 @@ enum TakBoardSize {
     Size7x7,
     Size8x8,
 }
-
-// struct TakBoardConfig {
-//     board_size: u32,
-//     normal_stones: u32,
-//     capstones: u32,
-// }
+use TakBoardSize::*;
 
 pub struct TakBoard {
-    grid: HashMap<(i32, i32), Cell>,
+    size: usize,
+    grid: HashMap<(usize, usize), Cell>,
     players: [TakPlayer; 2],
     turn: StoneColor,
 }
@@ -56,11 +53,39 @@ struct TakPlayer {
 }
 
 impl TakBoard {
-    pub fn new() -> Self {
+    pub fn new(size: TakBoardSize) -> Self {
+        let (size, stones_available, capstones_available) = match size {
+            Size3x3 => (3, 10, 0),
+            Size4x4 => (4, 15, 0),
+            Size5x5 => (5, 20, 1),
+            Size6x6 => (6, 30, 1),
+            Size7x7 => (7, 40, 2),
+            Size8x8 => (8, 50, 2),
+        };
+        // Fill the cells of the grid
+        let mut grid = HashMap::with_capacity(size * size);
+        for row in 0..size {
+            for col in 0..size {
+                grid.insert((row, col), Cell::new());
+            }
+        }
+
         Self {
-            grid: HashMap::new(),
-            players: [TakPlayer::new(), TakPlayer::new()],
-            turn: StoneColor::White,
+            size,
+            grid,
+            players: [
+                TakPlayer {
+                    color: White,
+                    stones_available,
+                    capstones_available,
+                },
+                TakPlayer {
+                    color: Black,
+                    stones_available,
+                    capstones_available,
+                }
+            ],
+            turn: *[White, Black].choose(&mut rng()).unwrap(),
         }
     }
 
@@ -74,7 +99,7 @@ impl TakBoard {
     /// Put a new stone on the board
     fn put_stone(
         &mut self,
-        position: (i32, i32),
+        position: (usize, usize),
         stone_type: StoneType,
     ) -> Result<(), &'static str> {
         let current_player = &mut self.players[self.turn as usize];
@@ -174,16 +199,6 @@ impl fmt::Display for Stone {
             StoneType::FlatStone => write!(f, "F"),
             StoneType::StandingStone => write!(f, "W"),
             StoneType::CapStone => write!(f, "C"),
-        }
-    }
-}
-
-impl TakPlayer {
-    const fn new() -> Self {
-        Self {
-            color: StoneColor::White,
-            stones_available: 22,
-            capstones_available: 1,
         }
     }
 }
