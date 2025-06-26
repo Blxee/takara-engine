@@ -55,3 +55,10 @@ pub enum StoneType {
     StandingStone,
     CapStone,
 }
+
+pub enum Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}

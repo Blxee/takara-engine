@@ -1,7 +1,6 @@
-mod types;
-use types::*;
 mod cli;
 mod tak_board;
+mod types;
 use clap::Parser;
 
 #[derive(Parser)]

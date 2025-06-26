@@ -1,11 +1,15 @@
 use crate::tak_board;
 use crate::types::*;
+use Direction::*;
+use StoneType::*;
 
 pub fn start_game() {
     let mut board = tak_board::TakBoard::new(tak_board::BoardSize::Size5x5);
-    board.put_stone(Position::new(2, 3), tak_board::StoneType::CapStone);
-    board.put_stone(Position::new(1, 3), tak_board::StoneType::FlatStone);
-    board.put_stone(Position::new(1, 2), tak_board::StoneType::StandingStone);
+    board.put_stone(Position::new(2, 3), CapStone);
+    board.put_stone(Position::new(1, 3), FlatStone);
+    board.put_stone(Position::new(1, 2), StandingStone);
+    println!("{board}");
+    board.move_stack(Position::new(2, 1), None, Left, None);
     println!("{board}");
     // TODO: implement the game loop
 }
@@ -27,13 +31,6 @@ enum TakInput {
         /// The direction to break apart the selected stack towards
         direction: Direction,
     },
-}
-
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
 }
 
 impl TakInput {

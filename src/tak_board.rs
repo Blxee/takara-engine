@@ -4,6 +4,7 @@ use std::{
     collections::HashMap,
     fmt::{self},
 };
+use Direction::*;
 use StoneType::*;
 
 pub enum BoardSize {
@@ -45,14 +46,6 @@ struct TakPlayer {
     stones_available: u32,
     capstones_available: u32,
 }
-
-pub enum Direction {
-    Left,
-    Right,
-    Up,
-    Down,
-}
-use Direction::*;
 
 impl TakBoard {
     pub fn new(size: BoardSize) -> Self {
@@ -195,8 +188,8 @@ impl TakBoard {
             // if this cell is the furthest we can reach
             // (if we are at the border or the next head of stack is not passable)
             let cell_near_border = self.is_position_at_borders(current_position);
-            let current_stack_head = self.get_head_of_stack(current_position).stone_type;
-            let next_stack_head = self.get_head_of_stack(current_position + step).stone_type;
+            let current_stack_head = self.get_stack_at(current_position).stone_type;
+            let next_stack_head = self.get_stack_at(current_position + step).stone_type;
             if match (cell_near_border, current_stack_head, next_stack_head) {
                 (true, _, _) => true,
                 (false, FlatStone, CapStone | StandingStone) => true,
@@ -219,17 +212,16 @@ impl TakBoard {
         Ok(())
     }
 
+    fn get_stack_at(&self, pos: Position) -> &Vec<Stone> {
+        &self.grid.get(&pos).unwrap().stack
+    }
+
     /// Determines whether a position is at the edge of the board
     fn is_position_at_borders(&self, pos: Position) -> bool {
         pos.row == 0
             || pos.col == 0
             || pos.row == (self.size - 1) as i32
             || pos.col == (self.size - 1) as i32
-    }
-
-    fn get_head_of_stack(&self, pos: Position) -> &Stone {
-        // BUG: these unwraps could cause panic
-        self.grid.get(&pos).unwrap().stack.last().unwrap()
     }
 
     // fn is position_out_of_bounds(&self, pos: Position) -> bool {
