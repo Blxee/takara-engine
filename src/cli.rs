@@ -9,7 +9,7 @@ pub fn start_game() {
     board.put_stone(Position::new(1, 3), FlatStone);
     board.put_stone(Position::new(1, 2), StandingStone);
     println!("{board}");
-    board.move_stack(Position::new(2, 1), None, Left, None);
+    board.move_stack(Position::new(2, 3), None, Right, None);
     println!("{board}");
     // TODO: implement the game loop
 }

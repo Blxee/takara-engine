@@ -188,11 +188,18 @@ impl TakBoard {
             // if this cell is the furthest we can reach
             // (if we are at the border or the next head of stack is not passable)
             let cell_near_border = self.is_position_at_borders(current_position);
-            let current_stack_head = self.get_stack_at(current_position).stone_type;
-            let next_stack_head = self.get_stack_at(current_position + step).stone_type;
+            let current_stack_head = self.top_stone_at(current_position).unwrap().stone_type;
+            let next_stack_head = self.top_stone_at(current_position + step);
             if match (cell_near_border, current_stack_head, next_stack_head) {
                 (true, _, _) => true,
-                (false, FlatStone, CapStone | StandingStone) => true,
+                (
+                    false,
+                    FlatStone,
+                    Some(Stone {
+                        stone_type: CapStone | StandingStone,
+                        ..
+                    }),
+                ) => true,
                 // TODO: this needs another arm for when a capstone flattens a wall
                 _ => false,
             } {
@@ -212,8 +219,8 @@ impl TakBoard {
         Ok(())
     }
 
-    fn get_stack_at(&self, pos: Position) -> &Vec<Stone> {
-        &self.grid.get(&pos).unwrap().stack
+    fn top_stone_at(&self, pos: Position) -> Option<&Stone> {
+        self.grid.get(&pos).unwrap().stack.last()
     }
 
     /// Determines whether a position is at the edge of the board
