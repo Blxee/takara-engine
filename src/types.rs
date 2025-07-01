@@ -159,25 +159,43 @@ impl TakInput {
     fn parse_position(value: &mut String) -> Result<Position, &'static str> {
         const VALID_ROWS: &str = "12345678";
         const VALID_COLS: &str = "abcdefgh";
-        let Some(row) = value.chars().find_map(|c| VALID_ROWS.find(c)) else {
-            return Err("no valid row was found");
-        };
-        let Some(col) = value.chars().find_map(|c| VALID_COLS.find(c)) else {
-            return Err("no valid column was found");
-        };
-        Ok(Position::new(row as i32, col as i32))
+
+        let mut row = None;
+        for (i, chr) in value.char_indices() {
+            if let Some(idx) = VALID_ROWS.find(chr) {
+                row = Some(idx as i32);
+                value.remove(i);
+                break;
+            }
+        }
+
+        let mut col = None;
+        for (i, chr) in value.char_indices() {
+            if let Some(idx) = VALID_COLS.find(chr) {
+                col = Some(idx as i32);
+                value.remove(i);
+                break;
+            }
+        }
+
+        Ok(Position::new(
+            row.ok_or("no valid row was found")?,
+            col.ok_or("no valid column was found")?,
+        ))
     }
 
     /// Extract and remove the stone type letter
     /// (f: for flatstone, w: for wall aka standing stone, c: for capstone)
     fn parse_stone_type(value: &mut String) -> Result<StoneType, &'static str> {
-        for chr in value.chars() {
-            match chr {
-                'f' => return Ok(StoneType::FlatStone),
-                'w' => return Ok(StoneType::StandingStone),
-                'c' => return Ok(StoneType::CapStone),
+        for (i, chr) in value.char_indices() {
+            let stone_type = match chr {
+                'f' => StoneType::FlatStone,
+                'w' => StoneType::StandingStone,
+                'c' => StoneType::CapStone,
                 _ => continue,
-            }
+            };
+            value.remove(i);
+            return Ok(stone_type);
         }
         Err("no stone letter was found")
     }
@@ -198,22 +216,22 @@ impl TakInput {
     fn parse_direction(value: &mut String) -> Result<Direction, &'static str> {
         for (i, chr) in value.char_indices() {
             let direction = match chr {
-                'u' => Some(Direction::Up),
-                'd' => Some(Direction::Down),
-                'l' => Some(Direction::Left),
-                'r' => Some(Direction::Right),
-                _ => None,
+                'u' => Direction::Up,
+                'd' => Direction::Down,
+                'l' => Direction::Left,
+                'r' => Direction::Right,
+                _ => continue,
             };
-            if let Some(direction) = direction {
-                value.remove(i);
-                return Ok(direction);
-            }
+            value.remove(i);
+            return Ok(direction);
         }
         Err("no direction letter was found")
     }
 
     /// Extract digits represeting amount to drop at each cell while moving
     fn parse_drops(value: &mut String) -> Vec<u32> {
+        // BUG: this removes all the matching digits
+        // without accounting to the offset after each remove
         let mut drops = Vec::new();
         for (i, chr) in value.clone().char_indices() {
             if let Some(count) = chr.to_digit(10) {
