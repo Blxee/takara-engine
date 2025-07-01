@@ -159,7 +159,7 @@ impl TakInput {
     fn parse_position(value: &mut String) -> Result<Position, &'static str> {
         const VALID_ROWS: &str = "12345678";
         const VALID_COLS: &str = "abcdefgh";
-
+        // extract row
         let mut row = None;
         for (i, chr) in value.char_indices() {
             if let Some(idx) = VALID_ROWS.find(chr) {
@@ -168,7 +168,7 @@ impl TakInput {
                 break;
             }
         }
-
+        // extract col
         let mut col = None;
         for (i, chr) in value.char_indices() {
             if let Some(idx) = VALID_COLS.find(chr) {
@@ -230,14 +230,14 @@ impl TakInput {
 
     /// Extract digits represeting amount to drop at each cell while moving
     fn parse_drops(value: &mut String) -> Vec<u32> {
-        // BUG: this removes all the matching digits
-        // without accounting to the offset after each remove
         let mut drops = Vec::new();
+        let mut offset = 0;
         for (i, chr) in value.clone().char_indices() {
             if let Some(count) = chr.to_digit(10) {
                 // INFO: since this is the last part of tak input
                 // this remove is not necessary
-                value.remove(i);
+                value.remove(i - offset);
+                offset += 1;
                 drops.push(count);
             };
         }

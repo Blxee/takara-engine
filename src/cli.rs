@@ -9,7 +9,7 @@ pub fn start_game() {
     board.put_stone(Position::new(1, 3), FlatStone);
     board.put_stone(Position::new(1, 2), StandingStone);
     println!("{board}");
-    match TakInput::try_from("a1") {
+    match TakInput::try_from("a12l1113") {
         Err(msg) => println!("{msg}"),
         Ok(_) => println!("parsing was successful"),
     }
