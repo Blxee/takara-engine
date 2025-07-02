@@ -175,12 +175,7 @@ impl TakBoard {
             )
             .collect();
         // convert the direction to vector format
-        let step = match direction {
-            Left => Position::new(0, -1),
-            Right => Position::new(0, 1),
-            Up => Position::new(-1, 0),
-            Down => Position::new(1, 0),
-        };
+        let step: Position = direction.into();
         // move the stack towards direction while puting stones at each cell passed
         // according to stacks argument
         let mut current_position = position + step;

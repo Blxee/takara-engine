@@ -93,6 +93,18 @@ pub enum Direction {
     Down,
 }
 
+impl Into<Position> for Direction {
+    /// convert the direction to vector format
+    fn into(self) -> Position {
+        match self {
+            Direction::Left => Position::new(0, -1),
+            Direction::Right => Position::new(0, 1),
+            Direction::Up => Position::new(-1, 0),
+            Direction::Down => Position::new(1, 0),
+        }
+    }
+}
+
 /// Represents all the info that Tak move requires
 pub enum TakInput {
     /// Put either a flat, standing or a cap stone
