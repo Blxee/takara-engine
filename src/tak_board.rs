@@ -148,13 +148,11 @@ impl TakBoard {
     pub fn move_stack(
         &mut self,
         position: Position,
-        carry_amount: Option<usize>,
+        count: usize,
         direction: Direction,
-        stacks: Option<Vec<usize>>,
+        stacks: Vec<usize>,
     ) -> Result<(), &'static str> {
         // WARN: standing stones should not be moved
-        // set default carry amount to 1 if not provided
-        let carry_amount = carry_amount.unwrap_or(1);
         // set default stacks to 1 stone to be put for each cell passed
         let stacks = vec![1].repeat(self.size as usize);
         // get the stack at cell position
@@ -164,15 +162,12 @@ impl TakBoard {
             .ok_or("position is out of board bounds")?
             .stack;
         // if user is trying to carry more than available, return err
-        if carry_amount > original_stack.len() {
+        if count > original_stack.len() {
             return Err("cannot carry more than the original stack length");
         }
         // take the carry amount of stones from the cell
         let mut stack_to_move: Vec<_> = original_stack
-            .splice(
-                (original_stack.len() - carry_amount)..original_stack.len(),
-                [],
-            )
+            .splice((original_stack.len() - count)..original_stack.len(), [])
             .collect();
         // convert the direction to vector format
         let step: Position = direction.into();
@@ -182,25 +177,11 @@ impl TakBoard {
         for i in stacks {
             // if this cell is the furthest we can reach
             // (if we are at the border or the next head of stack is not passable)
-            let cell_near_border = self.is_position_at_borders(current_position);
-            let current_stack_head = self.top_stone_at(current_position).unwrap().stone_type;
-            let next_stack_head = self.top_stone_at(current_position + step);
-            if match (cell_near_border, current_stack_head, next_stack_head) {
-                (true, _, _) => true,
-                (
-                    false,
-                    FlatStone,
-                    Some(Stone {
-                        stone_type: CapStone | StandingStone,
-                        ..
-                    }),
-                ) => true,
-                // TODO: this needs another arm for when a capstone flattens a wall
-                _ => false,
-            } {
+            if self.is_cell_farthest_reachable(current_position, step) {
                 // empty the whole stack here
                 let cell = self.grid.get_mut(&current_position).unwrap();
                 cell.stack.append(&mut stack_to_move);
+                break;
             }
             // empty part of the stack here then continue
             let cell = self.grid.get_mut(&current_position).unwrap();
@@ -215,15 +196,36 @@ impl TakBoard {
     }
 
     fn top_stone_at(&self, pos: Position) -> Option<&Stone> {
-        self.grid.get(&pos).unwrap().stack.last()
+        self.grid.get(&pos)?.stack.last()
     }
 
-    /// Determines whether a position is at the edge of the board
-    fn is_position_at_borders(&self, pos: Position) -> bool {
-        pos.row == 0
-            || pos.col == 0
-            || pos.row == (self.size - 1) as i32
-            || pos.col == (self.size - 1) as i32
+    /// Determines whether a position is the farthest a stack can move
+    ///
+    /// # Arguments:
+    ///
+    /// * `pos` - the current cell position
+    /// * `step` - the direction of the stack movement
+    fn is_cell_farthest_reachable(&self, pos: Position, step: Position) -> bool {
+        let is_cell_at_border = self.grid.contains_key(&(pos + step));
+
+        if is_cell_at_border {
+            return true;
+        }
+
+        let Some(current_stack_head) = self.top_stone_at(pos) else {
+            return true;
+        };
+        let Some(next_stack_head) = self.top_stone_at(pos + step) else {
+            return false;
+        };
+
+        match (current_stack_head.stone_type, next_stack_head.stone_type) {
+            // if the next stack head is a capstone
+            (_, CapStone) => true,
+            // if this is flatstone and next is a wall
+            (FlatStone, StandingStone) => true,
+            _ => false,
+        }
     }
 
     // fn is position_out_of_bounds(&self, pos: Position) -> bool {

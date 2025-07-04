@@ -13,7 +13,7 @@ pub fn start_game() {
         Err(msg) => println!("{msg}"),
         Ok(_) => println!("parsing was successful"),
     }
-    // board.move_stack(Position::new(2, 3), None, Right, None);
-    // println!("{board}");
+    board.move_stack(Position::new(2, 3), 1, Right, Vec::new());
+    println!("{board}");
     // TODO: implement the game loop
 }
