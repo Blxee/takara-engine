@@ -177,7 +177,7 @@ impl TakBoard {
         for i in stacks {
             // if this cell is the furthest we can reach
             // (if we are at the border or the next head of stack is not passable)
-            if self.is_cell_farthest_reachable(current_position, step) {
+            if !self.is_cell_passable(current_position, step, &stack_to_move) {
                 // empty the whole stack here
                 let cell = self.grid.get_mut(&current_position).unwrap();
                 cell.stack.append(&mut stack_to_move);
@@ -199,41 +199,34 @@ impl TakBoard {
         self.grid.get(&pos)?.stack.last()
     }
 
-    /// Determines whether a position is the farthest a stack can move
+    /// Determines whether the next cell
+    /// could be passed by the moving stack
     ///
     /// # Arguments:
     ///
-    /// * `pos` - the current cell position
+    /// * `pos` - the current moving stack position
     /// * `step` - the direction of the stack movement
-    fn is_cell_farthest_reachable(&self, pos: Position, step: Position) -> bool {
+    /// * `stack` - the current moving stack itself
+    fn is_cell_passable(&self, pos: Position, step: Position, stack: &Vec<Stone>) -> bool {
         let is_cell_at_border = self.grid.contains_key(&(pos + step));
 
         if is_cell_at_border {
             return true;
         }
 
-        let Some(current_stack_head) = self.top_stone_at(pos) else {
-            return true;
+        let Some(current_stack_head) = stack.last() else {
+            return false;
         };
         let Some(next_stack_head) = self.top_stone_at(pos + step) else {
-            return false;
+            return true;
         };
 
         match (current_stack_head.stone_type, next_stack_head.stone_type) {
-            // if the next stack head is a capstone
-            (_, CapStone) => true,
-            // if this is flatstone and next is a wall
-            (FlatStone, StandingStone) => true,
+            (_, FlatStone) => true,
+            (CapStone, StandingStone) if stack.len() == 1 => true,
             _ => false,
         }
     }
-
-    // fn is position_out_of_bounds(&self, pos: Position) -> bool {
-    //     pos.row < 0
-    //         || pos.col < 0
-    //         || pos.row >= self.size as i32
-    //         || pos.col >= self.size as i32
-    // }
 }
 
 impl fmt::Display for TakBoard {
